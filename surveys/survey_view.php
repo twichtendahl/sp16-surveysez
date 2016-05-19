@@ -25,25 +25,14 @@ if(isset($_GET['id']) && (int)$_GET['id'] > 0){#proper data must be on querystri
 }
 
 //sql statement to select individual item
-$sql = "select Title,Description from sp16_surveys where SurveyID = " . $myID;
+//$sql = "select Title,Description from sp16_surveys where SurveyID = " . $myID;
 //---end config area --------------------------------------------------
 
 $foundRecord = FALSE; # Will change to true, if record found!
-   
-# connection comes first in mysqli (improved) function
-$result = mysqli_query(IDB::conn(),$sql) or die(trigger_error(mysqli_error(IDB::conn()), E_USER_ERROR));
 
-if(mysqli_num_rows($result) > 0)
-{#records exist - process
-	   $foundRecord = TRUE;	
-	   while ($row = mysqli_fetch_assoc($result))
-	   {
-			$Title = dbOut($row['Title']);
-			$Description = dbOut($row['Description']);
-	   }
-}
+$mySurvey = new Survey($myID);
 
-@mysqli_free_result($result); # We're done with the data!
+dumpDie($mySurvey);
 
 if($foundRecord)
 {#only load data if record found
@@ -69,12 +58,43 @@ get_header(); #defaults to theme header or header_inc.php
 if($foundRecord)
 {#records exist - show survey!
     echo '
-    <h3 align="center">' . $Title . '</h3>
-    <p><b>Description:</b> ' . $Description . '</p>    
+    <h3 align="center">' . $mySurvey->Title . '</h3>
+    <p><b>Description:</b> ' . $mySurvey->Description . '</p>    
     ';
 }else{//no such survey!
     echo '<h3 align="center">No such survey</h3>';
 }
 echo '<div align="center"><a href="' . VIRTUAL_PATH . 'surveys/index.php">Back</a></div>';
 get_footer(); #defaults to theme footer or footer_inc.php
-?>
+
+class Survey {
+    
+    public $SurveyID = 0;
+    public $Title = '';
+    public $Description = '';
+    public $isValid = false;
+    
+    function __construct($id) {
+        
+        //forcibly cast the data to an integer
+        $id = (int)$id;
+        
+        $sql = "select Title,Description from sp16_surveys where SurveyID = " . $id;
+        
+        # connection comes first in mysqli (improved) function
+        $result = mysqli_query(IDB::conn(),$sql) or die(trigger_error(mysqli_error(IDB::conn()), E_USER_ERROR));
+
+        if(mysqli_num_rows($result) > 0)
+        {#records exist - process
+               $this->isValid = true;	
+               while ($row = mysqli_fetch_assoc($result))
+               {
+                    $this->Title = dbOut($row['Title']);
+                    $this->Description = dbOut($row['Description']);
+               }
+        }
+        
+        @mysqli_free_result($result); # We're done with the data!
+    } // end Survey constructor
+    
+} // end Survey class
